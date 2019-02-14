@@ -9,9 +9,6 @@ const zeroFill = require('zero-fill');
 const moment = require('moment');
 
 const combined_output_headers = (argv.combined_output_headers || 'Include	Reaccession Number	Name	Sample_number	Strain ID	Genus	species	subspecies	serover	OWNER	Collected by	collection_year	collection_month	collection_day	collection_source	Country	State	Other_Location_Information		NCBI_Sample_Type	Specific_Host	Host_Disease	PN_source_Type		Culture collection Inst.	culture collection ID	NCBI Type strain	WGS PulseNet ID	FACTS_ID	NARMS ID	CDC ID	Isolate_Name_Alias	PrivateStrainSynomyms		Pathotype	Phagetype	Toxin	PFGE_PrimaryEnzyme_pattern	PFGE_SecondaryEnzyme_pattern	VirulenceMarker		NCBI BioProject ID	Project	PulseNet_Outbreak_Code	Isolate_contributor	Public Comments	Private Comments	Metadata Issues		VetLIRN_SourceLab	Method used for organism identification	Isolation_Plate	Isolation_Plate_Other	Case_type	VetLIRN_Salmonella_serotype	VetLIRN_CollectionSource	VetLIRN_CollectionSourceComment').split("\t");
-while(combined_output_headers.length < 93) {
-    combined_output_headers.push('');
-}
 
 const plateIndex = combined_output_headers.indexOf('Isolation_Plate');
 const strainIdIndex = combined_output_headers.indexOf('Strain ID');
@@ -30,6 +27,11 @@ let combined_isolates_csv = fs.readFileSync(path.join(input_data_folder, combine
 
 // pre-process the data to remove everything up to the first 'YES,'
 combined_isolates_csv = combined_isolates_csv.slice(combined_isolates_csv.toLowerCase().indexOf('yes,'));
+// pad the header with spaces as necessary
+const data_record_length = combined_isolates_csv.split('\n').map(v => v.split(','))[1].length;
+while(combined_output_headers.length < data_record_length) {
+    combined_output_headers.push('');
+}
 combined_isolates_csv = combined_output_headers.join(',') + '\n' + combined_isolates_csv;
 
 const sensititre_csv = fs.readFileSync(path.join(input_data_folder, sensititre_filename), 'utf16le').replace(/[\t]+/g, '\t').replace(/[\u0000]+/g, ''); // remove consecutive delimieters
