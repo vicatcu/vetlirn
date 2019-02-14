@@ -8,66 +8,44 @@ const argv = require('minimist')(process.argv.slice(2));
 const zeroFill = require('zero-fill');
 const moment = require('moment');
 
-const lab_name = argv.lab || 'NY - Cornell University Animal Health Diagnostic Center';
-const program_name = argv.program || 'NAHLN AMR Pilot Project';
-const combined_output_headers = (argv.combined_output_headers || 'Laboratory Name,Unique Specimen ID,State of Animal Origin,Animal Species,Reason for submission ,Program Name,Specimen/ source tissue,Bacterial Organism Isolated,Salmonella Serotype,Final Diagnosis ,Date of Isolation').split(",");
-const bacterialOrganismIsolatedColumn = combined_output_headers.indexOf('Bacterial Organism Isolated'); 
+const combined_output_headers = (argv.combined_output_headers || 'Include	Reaccession Number	Name	Sample_number	Strain ID	Genus	species	subspecies	serover	OWNER	Collected by	collection_year	collection_month	collection_day	collection_source	Country	State	Other_Location_Information		NCBI_Sample_Type	Specific_Host	Host_Disease	PN_source_Type		Culture collection Inst.	culture collection ID	NCBI Type strain	WGS PulseNet ID	FACTS_ID	NARMS ID	CDC ID	Isolate_Name_Alias	PrivateStrainSynomyms		Pathotype	Phagetype	Toxin	PFGE_PrimaryEnzyme_pattern	PFGE_SecondaryEnzyme_pattern	VirulenceMarker		NCBI BioProject ID	Project	PulseNet_Outbreak_Code	Isolate_contributor	Public Comments	Private Comments	Metadata Issues		VetLIRN_SourceLab	Method used for organism identification	Isolation_Plate	Isolation_Plate_Other	Case_type	VetLIRN_Salmonella_serotype	VetLIRN_CollectionSource	VetLIRN_CollectionSourceComment').split("\t");
+
+const plateIndex = combined_output_headers.indexOf('Isolation_Plate');
+const strainIdIndex = combined_output_headers.indexOf('Strain ID');
+const genusIndex = combined_output_headers.indexOf('Genus');
+const speciesIndex = combined_output_headers.indexOf('species');
+const seroverIndex = combined_output_headers.indexOf('serover');
+
 const include_header_name = argv.include_header || 'Include';
-const input_data_folder = argv.folder || 'C:\\Users\\msp13\\Desktop\\AMRMasterList';
-const combined_isolates_filename = argv.combined || `Missy's Master Spreadsheet.csv`;
+const input_data_folder = argv.folder || 'C:\\Users\\msp13\\Desktop\\VETLIRNMasterList';
+const combined_isolates_filename = argv.combined || `Vet-LIRN Metadata Spreadsheet -v3.4-V-v11 MASTER.csv`;
 const sensititre_filename = argv.sensititre || `SWINExportFile.TXT`;
+const output_filename = argv.output_filename || argv.o || 'output.csv';
 
 // for name generation
-const state = argv.state || 'NY';
-const zipcode = argv.zip || '14853';
-const unique_name_prefix = `${state}${zipcode}PPY2`;
-
 const combined_isolates_csv = fs.readFileSync(path.join(input_data_folder, combined_isolates_filename), 'utf8');
 const sensititre_csv = fs.readFileSync(path.join(input_data_folder, sensititre_filename), 'utf16le').replace(/[\t]+/g, '\t').replace(/[\u0000]+/g, ''); // remove consecutive delimieters
-const accession_number_specimen_id_map = {};
-const accession_number_date_tested_map = {};
 
-const atb_species_drug_map = {
-    'Cattle':  ['AMPICI','CEFTIF','CLINDA','DANOFL','ENROFL','FLORFE','GAMITH','GENTAM','NEOMYC','PENICI','SDIMET','SPECT','TETRA','TIAMUL','TILMIC','TILDIP','TRISUL','TULATH','TYLO'],
-    'Swine': ['AMPICI','CEFTIF','CLINDA','DANOFL','ENROFL','FLORFE','GAMITH','GENTAM','NEOMYC','PENICI','SDIMET','SPECT','TETRA','TIAMUL','TILMIC','TILDIP','TRISUL','TULATH','TYLO'],
-    'Poultry-domestic chicken': ['AMOXIC','CEFTIF','CLINDA','ENROFL','ERYTH','FLORFE','GENTAM','NEOMYC','NOVOBI','OXYTET','PENICI','SDIMET','SPECT','STREPT','SULTHI','TETRA','TRISUL','TYLO'],
-    'Poultry-domestic turkey':  ['AMOXIC','CEFTIF','CLINDA','ENROFL','ERYTH','FLORFE','GENTAM','NEOMYC','NOVOBI','OXYTET','PENICI','SDIMET','SPECT','STREPT','SULTHI','TETRA','TRISUL','TYLO'],
-    'Poultry-domestic duck':    ['AMOXIC','CEFTIF','CLINDA','ENROFL','ERYTH','FLORFE','GENTAM','NEOMYC','NOVOBI','OXYTET','PENICI','SDIMET','SPECT','STREPT','SULTHI','TETRA','TRISUL','TYLO'],
-    'Equine':  ['AMIKAC','AMPICI','AZITHR','CEFAZO','CEFTAZ','CEFTIF','CHLORA','CLARYT','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','OXACIL','PENICI','RIFAMP','TETRA','TICARC','TICCLA','TRISUL'],
-    'Dog':  {
-        'dog-cat GN': {
-            'drug_map': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEFTAZ','CEPALE','CHLORA','DOXYCY','ENROFL','GENTAM','IMIPEN','MARBOF','ORBIFL','PIPTAZ','PRADOF','TETRA','TRISUL'],
-            'organism_regex': /(Escherichia coli)/
-        },
-        'dog-cat GP': {
-            'drug_map': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEPHAL','CHLORA','CLINDA','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','MARBOF','MINOCY','NITRO','OXACIL','PENICI','PRADOF','RIFAMP','TETRA','TRISUL','VANCOM'],
-            'organism_regex': /(Staphylococcus)/
-        }
-    },
-    'Cat':  {
-        'dog-cat GN': {
-            'drug_map': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEFTAZ','CEPALE','CHLORA','DOXYCY','ENROFL','GENTAM','IMIPEN','MARBOF','ORBIFL','PIPTAZ','PRADOF','TETRA','TRISUL'],
-            'organism_regex': /(Escherichia coli)/
-        },
-        'dog-cat GP': {
-            'drug_map': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEPHAL','CHLORA','CLINDA','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','MARBOF','MINOCY','NITRO','OXACIL','PENICI','PRADOF','RIFAMP','TETRA','TRISUL','VANCOM'],
-            'organism_regex': /(Staphylococcus)/
-        }
-    }
+const atb_plate_drug_map = {
+    'BOPO6F':  ['AMPICI','CEFTIF','CLINDA','DANOFL','ENROFL','FLORFE','GAMITH','GENTAM','NEOMYC','PENICI','SDIMET','SPECT','TETRA','TIAMUL','TILMIC','TILDIP','TRISUL','TULATH','TYLO'],
+    'AVIAN1F': ['AMOXIC','CEFTIF','CLINDA','ENROFL','ERYTH','FLORFE','GENTAM','NEOMYC','NOVOBI','OXYTET','PENICI','SDIMET','SPECT','STREPT','SULTHI','TETRA','TRISUL','TYLO'],
+    'EQUIN1F':  ['AMIKAC','AMPICI','AZITHR','CEFAZO','CEFTAZ','CEFTIF','CHLORA','CLARYT','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','OXACIL','PENICI','RIFAMP','TETRA','TICARC','TICCLA','TRISUL'],
+    'COMPGN1F': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEFTAZ','CEPALE','CHLORA','DOXYCY','ENROFL','GENTAM','IMIPEN','MARBOF','ORBIFL','PIPTAZ','PRADOF','TETRA','TRISUL'],
+    'COMPGP1F': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEPHAL','CHLORA','CLINDA','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','MARBOF','MINOCY','NITRO','OXACIL','PENICI','PRADOF','RIFAMP','TETRA','TRISUL','VANCOM'],
+    'CMV1BURF': [],
+    'OTHER': []
 };
 
 // pre-process combined isolates data
 let combined_isolates_data = parse(combined_isolates_csv, {columns: true});
-let starting_number = combined_isolates_data.map(r => r['Unique Specimen ID'].slice(-4))
-    .filter(v => v.trim()) // get rid of blanks
-    .reduce((t,v) => +v > t ? +v : t, -Infinity); // find the maximum value
-if(starting_number === -Infinity){
-    starting_number = 0;
-}
-starting_number++;
-console.log(`starting number will be ${zeroFill(4, starting_number)}`);
 combined_isolates_data = combined_isolates_data.filter(r => r[include_header_name].toLowerCase() === 'yes');
 console.log(`${combined_isolates_data.length} accessions will be included:`);
+
+if(combined_isolates_data.length === 0) {
+  process.exit(1);
+}
+
+const num_input_file_fields = combined_isolates_data[0].length;
 
 // pre-process sensititre data
 let sensititre_data;
@@ -86,7 +64,6 @@ if(sensititre_violations.length > 0){
 }
 
 let post_sensitire_data = sensititre_data.map(r => {
-    let date_value = moment(r[39],'YYYY-MM-DD HH:mm:ss').format('M/D/YYYY');
     let drug_data = r.slice(40);
     let consolidated_drug_data = [];
     // there are 100 wells worth of data, 3 columns per well
@@ -98,105 +75,67 @@ let post_sensitire_data = sensititre_data.map(r => {
         }
 
     }
-    return [date_value].concat(consolidated_drug_data);
+    return [].concat(consolidated_drug_data);
 });
 
 let allOutputDataRows = combined_isolates_data.map((r, idx) => {
-    const accession_number =  r['Accession #']; 
-    const bacterialSpecimenIsolated = r['Bacterial Organism Isolated'];
-    const salmonellaSerotype = (r['Salmonella Serotype'] || "".trim());
-    const isSalmonella = /Salmonella/.test(bacterialSpecimenIsolated);
-    if (isSalmonella && !salmonellaSerotype) {
-        console.error(`WARNING: Accession #${accession_number} is Salmonella but is missing Serotype`);
-        return null;
-    }
+    let row = combined_output_headers.map(h => r[h] || '');    
 
-    accession_number_specimen_id_map[accession_number] = unique_name_prefix + zeroFill(4, starting_number++);
-    let row = combined_output_headers.map(h => {            
-        switch(h){
-        case 'Laboratory Name': return r[h] || lab_name;
-        case 'Program Name': return r[h] || program_name;
-        case 'Unique Specimen ID': return accession_number_specimen_id_map[accession_number];
-        default: return r[h];
-        }                
-    });    
+    const accession_number = row[combined_output_headers.indexOf('Reaccession Number')].trim() ||
+      row[combined_output_headers.indexOf('Name')].trim();
 
     let corresponding_sensitire_row = sensititre_data.findIndex(s => s[6] === accession_number); // 6 is 'column G' in the sensititre data    
     if(corresponding_sensitire_row < 0){
         console.error(`Can't find sensititre record for Accesssion #: '${accession_number}'`);
         process.exit(2);
     }
-    accession_number_date_tested_map[accession_number] = moment(sensititre_data[corresponding_sensitire_row][39],'YYYY-MM-DD HH:mm:ss').format('M/D/YYYY'); // the test date
     return row.concat(post_sensitire_data[corresponding_sensitire_row]);
 });
 
 allOutputDataRows = allOutputDataRows.filter(r => r);
 
-let allOutputDataRowsByAnimalSpecies = {};
-const speciesIndex = combined_output_headers.indexOf('Animal Species');
+let allOutputDataRowsByPlateType = {};
 allOutputDataRows.forEach(r => {
-    let species = r[speciesIndex];
-    if(!allOutputDataRowsByAnimalSpecies[species]){
-        allOutputDataRowsByAnimalSpecies[species] = [];
+    let plateType = r[plateIndex];
+    if(!allOutputDataRowsByPlateType[plateType]){
+      allOutputDataRowsByPlateType[plateType] = [];
     }
-    allOutputDataRowsByAnimalSpecies[species].push(r);
+    allOutputDataRowsByPlateType[plateType].push(r);
 });
 
-console.dir(Object.keys(allOutputDataRowsByAnimalSpecies)
+console.dir(Object.keys(allOutputDataRowsByPlateType)
     .map((k) => {
         return {
-            species: k,
-            count: allOutputDataRowsByAnimalSpecies[k].length
+            plateType: k,
+            count: allOutputDataRowsByPlateType[k].length
         };
     }) 
 );
 
-const atb_offset = combined_output_headers.length + 1;
-const dropComplexSpecies = [];
+const atb_offset = num_input_file_fields;
 
-Object.keys(allOutputDataRowsByAnimalSpecies).forEach((species) => {    
-    const species_drug_map = atb_species_drug_map[species];    
-    const species_has_organism_partition = !Array.isArray(species_drug_map);
-
-    if(species_has_organism_partition){
-        const organism_partitions = Object.keys(species_drug_map);
-        dropComplexSpecies.push(species);
-        organism_partitions.forEach((partition) => {            
-            const obj = species_drug_map[partition];            
-            const drug_map = obj.drug_map;
-            const organism_regex = obj.organism_regex;
-            const rows = allOutputDataRowsByAnimalSpecies[species]
-              .filter(r => organism_regex.test(r[bacterialOrganismIsolatedColumn])); 
-              // r[7] is the Bacterial Organism Isolated
-            const meta_species = [species, partition];
-            expandSpeciesRows(meta_species, rows, drug_map);
-        });
-    } else {
-        const rows = allOutputDataRowsByAnimalSpecies[species];
-        delete allOutputDataRowsByAnimalSpecies[species];
-        expandSpeciesRows(species, rows, species_drug_map);
-    }
+Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {    
+    const plate_drug_map = atb_plate_drug_map[plateType];    
+    const rows = allOutputDataRowsByPlateType[plateType];
+    delete allOutputDataRowsByPlateType[plateType];
+    expandPlateTypeRows(plateType, rows, plate_drug_map);
 });
 
-dropComplexSpecies.forEach((species) => {
-    delete allOutputDataRowsByAnimalSpecies[species];
-});
-
-function expandSpeciesRows(species, rows, species_drug_map){
-    const num_target_drugs = species_drug_map.length;
+function expandPlateTypeRows(plateType, rows, plate_drug_map){
+    const num_target_drugs = plate_drug_map.length;
     if(num_target_drugs === 0){
-        console.log(`Warning: Species '${species}' has no drug map`);
+        console.log(`Warning: Plate Type '${plateType}' has no drug map`);
         return;
     }
     const newRows = rows.map((row, idx) => {
         const targetDrugContent = Array(num_target_drugs * 3).fill('');
         for(let i = atb_offset; row[i]; i += 3){
             const a = row[i], b = row[i+1], c = row[i+2];
-            const drugIndex = species_drug_map.indexOf(a);
+            const drugIndex = plate_drug_map.indexOf(a);
             if(drugIndex < 0){
                 const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);                
                 const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];
-                console.error(`Encountered unknown drug '${a}' in species '${species}' Sensititre data for Accession # ${accessionNumber}`, i-atb_offset);
+                console.error(`Encountered unknown drug '${a}' in Plate Type '${plateType}' Sensititre data for Accession # ${accessionNumber}`, i-atb_offset);
                 console.log(row.slice(atb_offset));
                 process.exit(3);
             }
@@ -204,117 +143,95 @@ function expandSpeciesRows(species, rows, species_drug_map){
             targetDrugContent[base] = a;
             targetDrugContent[base+1] = b;
             targetDrugContent[base+2] = c;
-        }            
+        }
 
-        for(let i = 0; i < species_drug_map.length; i++){
+        for(let i = 0; i < plate_drug_map.length; i++){
             const atb = (targetDrugContent[i*3] || "").trim();
             const mic = (targetDrugContent[i*3 + 1] || "").trim();
-            if(species_drug_map[i]){
+            if(plate_drug_map[i]){
                 const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);                
                 const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];                                
                 if(!atb){
-                    console.error(`WARNING: Accession # ${accessionNumber} is missing ATB '${species_drug_map[i]}'`);
+                    console.error(`WARNING: Accession # ${accessionNumber} is missing ATB '${plate_drug_map[i]}'`);
                 } else if(!mic) {
-                    console.error(`WARNING: Accession # ${accessionNumber} is missing MIC for ATB '${species_drug_map[i]}'`);
+                    console.error(`WARNING: Accession # ${accessionNumber} is missing MIC for ATB '${plate_drug_map[i]}'`);
                 }
             }
-
-
         }
 
-        const newRow = row.slice(0, atb_offset).concat(targetDrugContent).map(v => `"=""${v}"""`);
-
+        // const newRow = row.slice(0, atb_offset).concat(targetDrugContent).map(v => `"=""${v}"""`);
+        const newRow = row.slice(0, atb_offset).concat(targetDrugContent);
         return newRow;
     });
 
-    effectiveSpeciesTarget = allOutputDataRowsByAnimalSpecies;
-    if(!Array.isArray(species)){
-        species = [species];
+    effectivePlateTypeTarget = allOutputDataRowsByPlateType;
+    if(!Array.isArray(plateType)){
+        plateType = [plateType];
     }
-    while(species.length != 1){
-        const s = species.shift();
-        effectiveSpeciesTarget = effectiveSpeciesTarget[s];
+    while(plateType.length != 1){
+        const s = plateType.shift();
+        effectivePlateTypeTarget = effectivePlateTypeTarget[s];
     }
-    species = species.shift();
-    if(!allOutputDataRowsByAnimalSpecies[species]){
-        allOutputDataRowsByAnimalSpecies[species] = [];
+    plateType = plateType.shift();
+    if(!allOutputDataRowsByPlateType[plateType]){
+      allOutputDataRowsByPlateType[plateType] = [];
     }
     
-    allOutputDataRowsByAnimalSpecies[species] = allOutputDataRowsByAnimalSpecies[species].concat(newRows);
+    allOutputDataRowsByPlateType[plateType] = allOutputDataRowsByPlateType[plateType].concat(newRows);
 }
 
 console.log('These files will be generated: ');
-console.log(Object.keys(allOutputDataRowsByAnimalSpecies).map(k => `${k}.txt`));
-Object.keys(allOutputDataRowsByAnimalSpecies).forEach((k) => {
+console.log(Object.keys(allOutputDataRowsByPlateType).map(k => `${k}.txt`));
+Object.keys(allOutputDataRowsByPlateType).forEach((k) => {
+    // GENERATE ONE FILE PER PLATE TYPE BY ONLY KEEPING 
+    // sample ID*	=> Strain ID
+    // organism* => Genus + ' ' + species + [' ' serover]
+
+    const plateTypeOutputFileRows = allOutputDataRowsByPlateType[k]
+      .map(r => {
+        let nr = [];
+        nr.push(r[strainIdIndex]);
+        nr.push(r[genusIndex].trim() + ' ' + r[speciesIndex].trim() + (r[seroverIndex].trim() ? r[seroverIndex].trim() : ''));
+        nr = nr.concat(r.slice(num_input_file_fields));
+        return nr; 
+      });
+
     fs.writeFileSync(path.join(input_data_folder, `${k}.txt`), 
-        stringify(allOutputDataRowsByAnimalSpecies[k], {delimiter: '\t', escape: false, quote: false, quotedString: false, quotedEmpty: false }) 
+      stringify(plateTypeOutputFileRows, {delimiter: '\t', escape: false, quote: false, quotedString: false, quotedEmpty: false }) 
     );
 });
 
-console.log(`Back annotating Unique Specimen Id and Date Tested into '${combined_isolates_filename}'`);
-combined_isolates_data = parse(combined_isolates_csv, {columns: true});
-
-combined_isolates_data.sort((a, b) => {
-    // first sort by Include column
-    if (a[include_header_name] && !b[include_header_name]) {
-        return -1;
-    }
-    if (b[include_header_name] && !a[include_header_name]) {
-        return 1;
-    }
-    
-    // then sort by Accession # column
-    if(a['Accession #'] < b['Accession #']){
-        return -1;
-    }
-
-    if(a['Accession #'] > b['Accession #']){
-        return 1;
-    }
-
-    return 0;    
-});
-
-let cumulative_counts_by_species = {};
+let cumulative_counts_by_plateType = {};
 let total_samples = 0;
 combined_isolates_data = combined_isolates_data.map(r => {    
-    const accession_number = r['Accession #'];
-    if(accession_number_specimen_id_map[accession_number] && r['Unique Specimen ID']){
-        console.error(`New Unique Id would overwrite existing Unique Id for Accession # ${accession_number}`);
-        process.exit(4);
-    }
-
-    if(accession_number_date_tested_map[accession_number] && r['Date Tested']){
-        console.error(`New Date Tested would overwrite existing Date Tested for Accession # ${accession_number}`);
-        process.exit(5);
-    }
-
-    r['Unique Specimen ID'] = accession_number_specimen_id_map[accession_number] || r['Unique Specimen ID'];    
-    r['Date Tested'] = accession_number_date_tested_map[accession_number] || r['Date Tested'];
-    r[include_header_name] = ''; // clear the include header
-
-    // tally cumulative counts by species for those that have unique specimen id's attached
-    if(r['Unique Specimen ID']){
+    if(r[include_header_name]){
         total_samples++;
-        let species_organism = `${r['Animal Species']} - `;
-        let organism = r['Bacterial Organism Isolated'];
-        if(/Salmonella species/.test(organism)){
-            species_organism += 'Salmonella species';
-        } else if (/Staphylococcus/.test(organism)) {
-            species_organism += 'Staphylococcus';
-        } else {
-            species_organism += organism;
-        }
+        const plateType = r[plateIndex];
 
-        if(!cumulative_counts_by_species[species_organism]){ cumulative_counts_by_species[species_organism] = 0; }
-        cumulative_counts_by_species[species_organism]++;
+        if(!cumulative_counts_by_plateType[plateType]){ cumulative_counts_by_plateType[plateType] = 0; }
+        cumulative_counts_by_plateType[plateType]++;
     }
 
     return r;
 });
 
-fs.writeFileSync(path.join(input_data_folder, 'output.csv'), stringify(combined_isolates_data, {header: true}));
+let target_fields = 'Name,Sample_number,Strain ID,Genus,species,subspecies,serover,,Collected by,collection_year,collection_month,collection_source,Country,State,,NCBI_Sample_Type,Specific_Host,Host_Disease,,VetLIRN_SourceLab,Method used for organism identification,Isolation_Plate,Isolation_Plate_Other,Case_type,VetLIRN_Salmonella_serotype,VetLIRN_CollectionSource,VetLIRN_CollectionSourceComment';
+target_fields = target_fields.split(',');
+const outputFileRows = allOutputDataRows.map(r => {
+  let nr = [];
+  target_fields.forEach(field => {
+    if(field === '') {
+      nr.push('');
+    } else {
+      const fieldIndex = combined_output_headers.indexOf(field)
+      nr.push(r[fieldIndex]);
+    }
+  });
+  return nr;
+});
 
-console.log(`Cumulative Counts by Species / Organism:`, JSON.stringify(cumulative_counts_by_species, null, 2));
+fs.writeFileSync(path.join(input_data_folder, output_filename), stringify(outputFileRows, {header: false}));
+
+console.log(`Cumulative Counts by Plate Type:`, JSON.stringify(cumulative_counts_by_plateType, null, 2));
 console.log(`${total_samples} Total Samples`);
 console.log('done');
