@@ -42,8 +42,8 @@ const atb_plate_drug_map = {
     'EQUIN1F':  ['AMIKAC','AMPICI','AZITHR','CEFAZO','CEFTAZ','CEFTIF','CHLORA','CLARYT','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','OXACIL','PENICI','RIFAMP','TETRA','TICARC','TICCLA','TRISUL'],
     'COMPGN1F': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEFTAZ','CEPALE','CHLORA','DOXYCY','ENROFL','GENTAM','IMIPEN','MARBOF','ORBIFL','PIPTAZ','PRADOF','TETRA','TRISUL'],
     'COMPGP1F': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEPHAL','CHLORA','CLINDA','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','MARBOF','MINOCY','NITRO','OXACIL','PENICI','PRADOF','RIFAMP','TETRA','TRISUL','VANCOM'],
-    'CMV1BURF': [],
-    'OTHER': []
+    'CMV1BURF': ['AMOCLA','AMPICI','CEFTIF','CEPHAL','ENROFL','TETRA','TRISUL'],
+    'OTHER': ['AMIKAC','BACITR?','CEFAZO','CEFTIF','CHLORA','CIPROF?','DOXYCY','ERYTH','GENTAM','MOXIFL?','NEOMYC','OFLOXA?']
 };
 
 const missingATBs = new Map();
@@ -58,7 +58,7 @@ if(combined_isolates_data.length === 0) {
   process.exit(1);
 }
 
-const num_input_file_fields = combined_isolates_data[0].length;
+const num_input_file_fields = Object.keys(combined_isolates_data[0]).length;
 
 // pre-process sensititre data
 let sensititre_data;
@@ -134,7 +134,7 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
     }) 
 );
 
-const atb_offset = num_input_file_fields;
+const atb_offset = 57; // num_input_file_fields;
 
 Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {    
     const plate_drug_map = atb_plate_drug_map[plateType];    
@@ -258,8 +258,8 @@ const outputFileRows = allOutputDataRows.map(r => {
 
 fs.writeFileSync(path.join(input_data_folder, output_filename), stringify(outputFileRows, {header: false}));
 
-console.log(`These ATBs were missing on at least one accession`, JSON.stringify(Array.from(missingATBs).map(v => `${v[0]}: ${v[1]}`), null, 2));
-console.log(`These ATBs were missing MICs on at least one accession`, JSON.stringify(Array.from(missingMICs).map(v => `${v[0]}: ${v[1]}`), null, 2));
+// console.log(`These ATBs were missing on at least one accession`, JSON.stringify(Array.from(missingATBs).map(v => `${v[0]}: ${v[1]}`), null, 2));
+// console.log(`These ATBs were missing MICs on at least one accession`, JSON.stringify(Array.from(missingMICs).map(v => `${v[0]}: ${v[1]}`), null, 2));
 
 console.log(`Cumulative Counts by Plate Type:`, JSON.stringify(cumulative_counts_by_plateType, null, 2));
 console.log(`${total_samples} Total Samples`);
