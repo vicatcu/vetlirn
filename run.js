@@ -46,6 +46,9 @@ const atb_plate_drug_map = {
     'OTHER': []
 };
 
+const missingATBs = new Map();
+const missingMICs = new Map();
+
 // pre-process combined isolates data
 let combined_isolates_data = parse(combined_isolates_csv, {columns: true});
 combined_isolates_data = combined_isolates_data.filter(r => r[include_header_name].toLowerCase() === 'yes');
@@ -88,6 +91,7 @@ let post_sensitire_data = sensititre_data.map(r => {
     return [].concat(consolidated_drug_data);
 });
 
+let errorFlag = false;
 let allOutputDataRows = combined_isolates_data.map((r, idx) => {
     let row = combined_output_headers.map(h => r[h] || '');    
 
@@ -99,11 +103,16 @@ let allOutputDataRows = combined_isolates_data.map((r, idx) => {
         console.error(`Can't find sensititre record for Accesssion #: '${accession_number}'`);
         if(!accession_number) {
             console.error('ROW: ' + row.join(','));
-        }
-        process.exit(2);
+        }        
+        errorFlag = true;
+    } else {
+        return row.concat(post_sensitire_data[corresponding_sensitire_row]);
     }
-    return row.concat(post_sensitire_data[corresponding_sensitire_row]);
 });
+
+if(errorFlag) {
+    process.exit(2);
+}
 
 allOutputDataRows = allOutputDataRows.filter(r => r);
 
@@ -146,8 +155,9 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
             const a = row[i], b = row[i+1], c = row[i+2];
             const drugIndex = plate_drug_map.indexOf(a);
             if(drugIndex < 0){
-                const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);                
-                const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];
+                // const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);                
+                // const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];
+                const accessionNumber = row[2];
                 console.error(`Encountered unknown drug '${a}' in Plate Type '${plateType}' Sensititre data for Accession # ${accessionNumber}`, i-atb_offset);
                 console.log(row.slice(atb_offset));
                 process.exit(3);
@@ -162,12 +172,15 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
             const atb = (targetDrugContent[i*3] || "").trim();
             const mic = (targetDrugContent[i*3 + 1] || "").trim();
             if(plate_drug_map[i]){
-                const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);                
-                const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];                                
+                // const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);                
+                // const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];  
+                const accessionNumber = row[2];                              
                 if(!atb){
                     console.error(`WARNING: Accession # ${accessionNumber} is missing ATB '${plate_drug_map[i]}'`);
+                    missingATBs.set(plate_drug_map[i], missingATBs.get(plate_drug_map[i]) ? missingATBs.get(plate_drug_map[i])+1 : 1)
                 } else if(!mic) {
                     console.error(`WARNING: Accession # ${accessionNumber} is missing MIC for ATB '${plate_drug_map[i]}'`);
+                    missingMICs.set(plate_drug_map[i], missingMICs.get(plate_drug_map[i]) ? missingMICs.get(plate_drug_map[i])+1 : 1)
                 }
             }
         }
@@ -219,7 +232,7 @@ let total_samples = 0;
 combined_isolates_data = combined_isolates_data.map(r => {    
     if(r[include_header_name]){
         total_samples++;
-        const plateType = r[plateIndex];
+        const plateType = r.Isolation_Plate;
 
         if(!cumulative_counts_by_plateType[plateType]){ cumulative_counts_by_plateType[plateType] = 0; }
         cumulative_counts_by_plateType[plateType]++;
@@ -244,6 +257,9 @@ const outputFileRows = allOutputDataRows.map(r => {
 });
 
 fs.writeFileSync(path.join(input_data_folder, output_filename), stringify(outputFileRows, {header: false}));
+
+console.log(`These ATBs were missing on at least one accession`, JSON.stringify(Array.from(missingATBs).map(v => `${v[0]}: ${v[1]}`), null, 2));
+console.log(`These ATBs were missing MICs on at least one accession`, JSON.stringify(Array.from(missingMICs).map(v => `${v[0]}: ${v[1]}`), null, 2));
 
 console.log(`Cumulative Counts by Plate Type:`, JSON.stringify(cumulative_counts_by_plateType, null, 2));
 console.log(`${total_samples} Total Samples`);
