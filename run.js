@@ -64,7 +64,7 @@ const num_input_file_fields = Object.keys(combined_isolates_data[0]).length;
 let sensititre_data;
 try {
     sensititre_data = parse(sensititre_csv, {delimiter: '\t'});
-} 
+}
 catch(e){
     console.log('Sensitre Data parse error', e.message);
     process.exit(1);
@@ -93,17 +93,17 @@ let post_sensitire_data = sensititre_data.map(r => {
 
 let errorFlag = false;
 let allOutputDataRows = combined_isolates_data.map((r, idx) => {
-    let row = combined_output_headers.map(h => r[h] || '');    
+    let row = combined_output_headers.map(h => r[h] || '');
 
     const accession_number = row[combined_output_headers.indexOf('Reaccession Number')].trim() ||
       row[combined_output_headers.indexOf('Name')].trim();
 
-    let corresponding_sensitire_row = sensititre_data.findIndex(s => s[6] === accession_number); // 6 is 'column G' in the sensititre data    
+    let corresponding_sensitire_row = sensititre_data.findIndex(s => s[6] === accession_number); // 6 is 'column G' in the sensititre data
     if(corresponding_sensitire_row < 0){
         console.error(`Can't find sensititre record for Accesssion #: '${accession_number}'`);
         if(!accession_number) {
             console.error('ROW: ' + row.join(','));
-        }        
+        }
         errorFlag = true;
     } else {
         return row.concat(post_sensitire_data[corresponding_sensitire_row]);
@@ -131,14 +131,14 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
             plateType: k,
             count: allOutputDataRowsByPlateType[k].length
         };
-    }) 
+    })
 );
 
 const atb_offset = 57; // num_input_file_fields;
 
-Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {  
-    // console.log(`Before expandPlateTypeRows, plate type ${plateType} had ${allOutputDataRowsByPlateType[plateType].length} rows`)  
-    const plate_drug_map = atb_plate_drug_map[plateType];    
+Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {
+    // console.log(`Before expandPlateTypeRows, plate type ${plateType} had ${allOutputDataRowsByPlateType[plateType].length} rows`)
+    const plate_drug_map = atb_plate_drug_map[plateType];
     const rows = allOutputDataRowsByPlateType[plateType];
     delete allOutputDataRowsByPlateType[plateType];
     expandPlateTypeRows(plateType, rows, plate_drug_map);
@@ -160,7 +160,7 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
 
             const drugIndex = plate_drug_map.indexOf(a);
             if(drugIndex < 0){
-                // const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);                
+                // const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);
                 // const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];
                 const accessionNumber = row[2];
                 console.error(`Encountered unknown drug '${a}' in Plate Type '${plateType}' Sensititre data for Accession # ${accessionNumber}`, i-atb_offset);
@@ -177,9 +177,9 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
             const atb = (targetDrugContent[i*3] || "").trim();
             const mic = (targetDrugContent[i*3 + 1] || "").trim();
             if(plate_drug_map[i]){
-                // const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);                
-                // const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];  
-                const accessionNumber = row[2];                              
+                // const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);
+                // const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];
+                const accessionNumber = row[2];
                 if(!atb){
                     console.error(`WARNING: Accession # ${accessionNumber} is missing ATB '${plate_drug_map[i]}'`);
                     missingATBs.set(plate_drug_map[i], missingATBs.get(plate_drug_map[i]) ? missingATBs.get(plate_drug_map[i])+1 : 1)
@@ -215,7 +215,7 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
 console.log('These files will be generated: ');
 console.log(Object.keys(allOutputDataRowsByPlateType).map(k => `${k}.txt`));
 Object.keys(allOutputDataRowsByPlateType).forEach((k) => {
-    // GENERATE ONE FILE PER PLATE TYPE BY ONLY KEEPING 
+    // GENERATE ONE FILE PER PLATE TYPE BY ONLY KEEPING
     // sample ID*	=> Strain ID
     // organism* => Genus + ' ' + species + [' ' serover]
 
@@ -223,19 +223,19 @@ Object.keys(allOutputDataRowsByPlateType).forEach((k) => {
       .map(r => {
         let nr = [];
         nr.push(r[strainIdIndex]);
-        nr.push(r[genusIndex].trim() + ' ' + r[speciesIndex].trim() + (r[seroverIndex].trim() ? r[seroverIndex].trim() : ''));
-        nr = nr.concat(r.slice(num_input_file_fields));
-        return nr; 
+        nr.push(r[genusIndex].trim() + ' ' + r[speciesIndex].trim() + ' ' + (r[seroverIndex].trim() ? r[seroverIndex].trim() : ''));
+        nr = nr.concat(r.slice(num_input_file_fields + 4));
+        return nr;
       });
 
-    fs.writeFileSync(path.join(input_data_folder, `${k}.txt`), 
-      stringify(plateTypeOutputFileRows, {delimiter: '\t', escape: false, quote: false, quotedString: false, quotedEmpty: false }) 
+    fs.writeFileSync(path.join(input_data_folder, `${k}.txt`),
+      stringify(plateTypeOutputFileRows, {delimiter: '\t', escape: false, quote: false, quotedString: false, quotedEmpty: false })
     );
 });
 
 let cumulative_counts_by_plateType = {};
 let total_samples = 0;
-combined_isolates_data = combined_isolates_data.map(r => {    
+combined_isolates_data = combined_isolates_data.map(r => {
     if(r[include_header_name]){
         total_samples++;
         const plateType = r.Isolation_Plate;
