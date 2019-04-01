@@ -42,8 +42,8 @@ const atb_plate_drug_map = {
     'EQUIN1F':  ['AMIKAC','AMPICI','AZITHR','CEFAZO','CEFTAZ','CEFTIF','CHLORA','CLARYT','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','OXACIL','PENICI','RIFAMP','TETRA','TICARC','TICCLA','TRISUL'],
     'COMPGN1F': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEFTAZ','CEPALE','CHLORA','DOXYCY','ENROFL','GENTAM','IMIPEN','MARBOF','ORBIFL','PIPTAZ','PRADOF','TETRA','TRISUL'],
     'COMPGP1F': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEPHAL','CHLORA','CLINDA','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','MARBOF','MINOCY','NITRO','OXACIL','PENICI','PRADOF','RIFAMP','TETRA','TRISUL','VANCOM'],
-    'CMV1BURF': ['AMOCLA','AMPICI','CEFTIF','CEPHAL','ENROFL','TETRA','TRISUL'],
-    'OTHER': ['AMIKAC','BACITR?','CEFAZO','CEFTIF','CHLORA','CIPROF?','DOXYCY','ERYTH','GENTAM','MOXIFL?','NEOMYC','OFLOXA?']
+    'CMV1BURF': ['AMOCLA','AMPICI','CEFTIF','CEPALE','ENROFL','TETRA','TRISUL'],
+    'OTHER': ['AMIKAC','BACITR','CEFAZO','CEFTIF','CHLORA','CIPROF','DOXYCY','ERYTH','GENTAM','MOXIFL','NEOMYC','OFLOXA','OXYTET','POLYB','TICARC','TOBRAM','TRISUL']
 };
 
 const missingATBs = new Map();
@@ -136,7 +136,8 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
 
 const atb_offset = 57; // num_input_file_fields;
 
-Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {    
+Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {  
+    // console.log(`Before expandPlateTypeRows, plate type ${plateType} had ${allOutputDataRowsByPlateType[plateType].length} rows`)  
     const plate_drug_map = atb_plate_drug_map[plateType];    
     const rows = allOutputDataRowsByPlateType[plateType];
     delete allOutputDataRowsByPlateType[plateType];
@@ -152,14 +153,18 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
     const newRows = rows.map((row, idx) => {
         const targetDrugContent = Array(num_target_drugs * 3).fill('');
         for(let i = atb_offset; row[i]; i += 3){
-            const a = row[i], b = row[i+1], c = row[i+2];
+            let a = row[i], b = row[i+1], c = row[i+2];
+
+            if(!a || !a.trim()) continue;
+            a = a.trim(); b = b.trim(); c = c.trim();
+
             const drugIndex = plate_drug_map.indexOf(a);
             if(drugIndex < 0){
                 // const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);                
                 // const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];
                 const accessionNumber = row[2];
                 console.error(`Encountered unknown drug '${a}' in Plate Type '${plateType}' Sensititre data for Accession # ${accessionNumber}`, i-atb_offset);
-                console.log(row.slice(atb_offset));
+                // console.log(row.slice(atb_offset));
                 process.exit(3);
             }
             const base = drugIndex * 3;
@@ -188,7 +193,7 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
         // const newRow = row.slice(0, atb_offset).concat(targetDrugContent).map(v => `"=""${v}"""`);
         const newRow = row.slice(0, atb_offset).concat(targetDrugContent);
         return newRow;
-    });
+    }).filter(v => v);
 
     effectivePlateTypeTarget = allOutputDataRowsByPlateType;
     if(!Array.isArray(plateType)){
@@ -200,9 +205,10 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
     }
     plateType = plateType.shift();
     if(!allOutputDataRowsByPlateType[plateType]){
+    //   console.log(`Creating new Plate Type entry: ${plateType}`)
       allOutputDataRowsByPlateType[plateType] = [];
     }
-    
+    // console.log(`Adding ${newRows.length} rows to Plate type ${plateType}`)
     allOutputDataRowsByPlateType[plateType] = allOutputDataRowsByPlateType[plateType].concat(newRows);
 }
 
