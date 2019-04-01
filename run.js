@@ -184,7 +184,7 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
                     console.error(`WARNING: Accession # ${accessionNumber} is missing ATB '${plate_drug_map[i]}' -- Genus '${row[5]}' and Plate '${row[52]}'`);
                     missingATBs.set(plate_drug_map[i], missingATBs.get(plate_drug_map[i]) ? missingATBs.get(plate_drug_map[i])+1 : 1)
                 } else if(!mic) {
-                    console.error(`WARNING: Accession # ${accessionNumber} is missing MIC for ATB '${plate_drug_map[i]}' -- Genus '${row[5]}' and Plate '${row[52]}'`);
+                    console.error(`WARNING: Accession # ${accessionNumber} is missing MIC for ATB '${plate_drug_map[i]}' -- Genus '${row[5]}' and Plate '${row[51]}'`);
                     missingMICs.set(plate_drug_map[i], missingMICs.get(plate_drug_map[i]) ? missingMICs.get(plate_drug_map[i])+1 : 1)
                 }
             }
