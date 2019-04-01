@@ -181,10 +181,10 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
                 // const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];
                 const accessionNumber = row[1] || row[2];
                 if(!atb){
-                    console.error(`WARNING: Accession # ${accessionNumber} is missing ATB '${plate_drug_map[i]}'`);
+                    console.error(`WARNING: Accession # ${accessionNumber} is missing ATB '${plate_drug_map[i]}' -- Genus '${row[5]}' and Plate '${row[52]}'`);
                     missingATBs.set(plate_drug_map[i], missingATBs.get(plate_drug_map[i]) ? missingATBs.get(plate_drug_map[i])+1 : 1)
                 } else if(!mic) {
-                    console.error(`WARNING: Accession # ${accessionNumber} is missing MIC for ATB '${plate_drug_map[i]}'`);
+                    console.error(`WARNING: Accession # ${accessionNumber} is missing MIC for ATB '${plate_drug_map[i]}' -- Genus '${row[5]}' and Plate '${row[52]}'`);
                     missingMICs.set(plate_drug_map[i], missingMICs.get(plate_drug_map[i]) ? missingMICs.get(plate_drug_map[i])+1 : 1)
                 }
             }
