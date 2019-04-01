@@ -88,7 +88,7 @@ let post_sensitire_data = sensititre_data.map(r => {
         }
 
     }
-    return [].concat(consolidated_drug_data);
+    return [].concat(consolidated_drug_data).concat([r[9]]);
 });
 
 let errorFlag = false;
@@ -106,7 +106,7 @@ let allOutputDataRows = combined_isolates_data.map((r, idx) => {
         }
         errorFlag = true;
     } else {
-        return row.concat([sensititre_data.find(s => s[6] === accession_number)[9]]).concat(post_sensitire_data[corresponding_sensitire_row]);
+        return row.concat(post_sensitire_data[corresponding_sensitire_row]);
     }
 });
 
@@ -134,7 +134,7 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
     })
 );
 
-const atb_offset = 58; // num_input_file_fields;
+const atb_offset = 57; // num_input_file_fields;
 
 Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {
     // console.log(`Before expandPlateTypeRows, plate type ${plateType} had ${allOutputDataRowsByPlateType[plateType].length} rows`)
@@ -152,7 +152,7 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
     }
     const newRows = rows.map((row, idx) => {
         const targetDrugContent = Array(num_target_drugs * 3).fill('');
-        for(let i = atb_offset; row[i]; i += 3){
+        for(let i = atb_offset; row[i] && row[i+1] && row[i+2]; i += 3){
             let a = row[i], b = row[i+1], c = row[i+2];
 
             if(!a || !a.trim()) continue;
@@ -191,7 +191,7 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
         }
 
         // const newRow = row.slice(0, atb_offset).concat(targetDrugContent).map(v => `"=""${v}"""`);
-        const newRow = row.slice(0, atb_offset).concat(targetDrugContent);
+        const newRow = row.slice(0, atb_offset).concat(targetDrugContent).concat(row.slice(-1)[0]);
         return newRow;
     }).filter(v => v);
 
@@ -224,6 +224,7 @@ Object.keys(allOutputDataRowsByPlateType).forEach((k) => {
         let nr = [];
         nr.push(r[strainIdIndex]);
         // nr.push(r[genusIndex].trim() + ' ' + r[speciesIndex].trim() + ' ' + (r[seroverIndex].trim() ? r[seroverIndex].trim() : ''));
+        nr.push(r.pop());
         nr = nr.concat(r.slice(num_input_file_fields + 4));
         return nr;
       });
