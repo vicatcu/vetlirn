@@ -106,7 +106,7 @@ let allOutputDataRows = combined_isolates_data.map((r, idx) => {
         }
         errorFlag = true;
     } else {
-        return row.concat(post_sensitire_data[corresponding_sensitire_row]);
+        return row.concat([sensititre_data.find(s => s[6] === accession_number)[9]]).concat(post_sensitire_data[corresponding_sensitire_row]);
     }
 });
 
@@ -134,7 +134,7 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
     })
 );
 
-const atb_offset = 57; // num_input_file_fields;
+const atb_offset = 58; // num_input_file_fields;
 
 Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {
     // console.log(`Before expandPlateTypeRows, plate type ${plateType} had ${allOutputDataRowsByPlateType[plateType].length} rows`)
@@ -223,7 +223,7 @@ Object.keys(allOutputDataRowsByPlateType).forEach((k) => {
       .map(r => {
         let nr = [];
         nr.push(r[strainIdIndex]);
-        nr.push(r[genusIndex].trim() + ' ' + r[speciesIndex].trim() + ' ' + (r[seroverIndex].trim() ? r[seroverIndex].trim() : ''));
+        // nr.push(r[genusIndex].trim() + ' ' + r[speciesIndex].trim() + ' ' + (r[seroverIndex].trim() ? r[seroverIndex].trim() : ''));
         nr = nr.concat(r.slice(num_input_file_fields + 4));
         return nr;
       });
