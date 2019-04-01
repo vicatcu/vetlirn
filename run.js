@@ -37,7 +37,7 @@ combined_isolates_csv = combined_output_headers.join(',') + '\n' + combined_isol
 const sensititre_csv = fs.readFileSync(path.join(input_data_folder, sensititre_filename), 'utf16le').replace(/[\t]+/g, '\t').replace(/[\u0000]+/g, ''); // remove consecutive delimieters
 
 const atb_plate_drug_map = {
-    'BOPO6F':  ['AMPICI','CEFTIF','CHLTET','CLINDA','DANOFL','ENROFL','FLORFE','GAMITH','GENTAM','NEOMYC','OXYTET','PENICI','SDIMET','SPECT','TETRA','TIAMUL','TILMIC','TILDIP','TRISUL','TULATH','TYLO'],
+    'BOPO6F':  ['AMPICI','CEFTIF','CHLTET','CLINDA','DANOFL','ENROFL','FLORFE','GENTAM','NEOMYC','OXYTET','PENICI','SDIMET','SPECT','TIAMUL','TILMIC','TRISUL','TULATH','TYLO'],
     'AVIAN1F': ['AMOXIC','CEFTIF','CLINDA','ENROFL','ERYTH','FLORFE','GENTAM','NEOMYC','NOVOBI','OXYTET','PENICI','SDIMET','SPECT','STREPT','SULTHI','TETRA','TRISUL','TYLO'],
     'EQUIN1F':  ['AMIKAC','AMPICI','AZITHR','CEFAZO','CEFTAZ','CEFTIF','CHLORA','CLARYT','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','OXACIL','PENICI','RIFAMP','TETRA','TICARC','TICCLA','TRISUL'],
     'COMPGN1F': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEFTAZ','CEPALE','CHLORA','DOXYCY','ENROFL','GENTAM','IMIPEN','MARBOF','ORBIFL','PIPTAZ','PRADOF','TETRA','TRISUL'],
