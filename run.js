@@ -162,7 +162,7 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
             if(drugIndex < 0){
                 // const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);
                 // const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];
-                const accessionNumber = row[2];
+                const accessionNumber = row[1] || row[2];
                 console.error(`Encountered unknown drug '${a}' in Plate Type '${plateType}' Sensititre data for Accession # ${accessionNumber}`, i-atb_offset);
                 // console.log(row.slice(atb_offset));
                 process.exit(3);
@@ -179,7 +179,7 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
             if(plate_drug_map[i]){
                 // const indexOfAccession = Object.keys(accession_number_specimen_id_map).map(k => accession_number_specimen_id_map[k]).indexOf(row[1]);
                 // const accessionNumber = Object.keys(accession_number_specimen_id_map)[indexOfAccession];
-                const accessionNumber = row[2];
+                const accessionNumber = row[1] || row[2];
                 if(!atb){
                     console.error(`WARNING: Accession # ${accessionNumber} is missing ATB '${plate_drug_map[i]}'`);
                     missingATBs.set(plate_drug_map[i], missingATBs.get(plate_drug_map[i]) ? missingATBs.get(plate_drug_map[i])+1 : 1)
