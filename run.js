@@ -138,7 +138,7 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
     })
 );
 
-const atb_offset = lastRelevantHeaderIndex + 1; // 57; // num_input_file_fields;
+const atb_offset = lastRelevantHeaderIndex + 3; // 57; // num_input_file_fields;
 
 Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {
     // console.log(`Before expandPlateTypeRows, plate type ${plateType} had ${allOutputDataRowsByPlateType[plateType].length} rows`)
@@ -156,7 +156,7 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
     }
     const newRows = rows.map((row, idx) => {
         const targetDrugContent = Array(num_target_drugs * 3).fill('');
-        for(let i = atb_offset; row[i] && row[i+1] && row[i+2]; i += 3){
+        for(let i = atb_offset; row[i] && row[i+1] && row[i+2] && row[i].trim() && row[i+1].trim() && row[i+2].trim(); i += 3){
             let a = row[i], b = row[i+1], c = row[i+2];
 
             if(!a || !a.trim()) continue;
