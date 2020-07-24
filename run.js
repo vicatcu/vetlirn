@@ -18,7 +18,7 @@ const seroverIndex = combined_output_headers.indexOf('serover');
 
 const include_header_name = argv.include_header || 'Include';
 const input_data_folder = argv.folder || 'C:\\Users\\msp13\\Desktop\\VETLIRNMasterList';
-const combined_isolates_filename = argv.combined || `Vet-LIRN Metadata Spreadsheet -v3.4-V-v11 MASTER.csv`;
+const combined_isolates_filename = argv.combined || `Vet-LIRN_metadata_GT-v3.4-V-v14.csv`;
 const sensititre_filename = argv.sensititre || `SWINExportFile.TXT`;
 const output_filename = argv.output_filename || argv.o || 'output.csv';
 
@@ -35,11 +35,13 @@ while(combined_output_headers.length < data_record_length) {
 combined_isolates_csv = combined_output_headers.join(',') + '\n' + combined_isolates_csv;
 
 const sensititre_csv = fs.readFileSync(path.join(input_data_folder, sensititre_filename), 'utf16le').replace(/[\t]+/g, '\t').replace(/[\u0000]+/g, ''); // remove consecutive delimieters
-
+//Added BOPO7F and EQUIN2F plates 5/27/20
 const atb_plate_drug_map = {
     'BOPO6F':  ['AMPICI','CEFTIF','CHLTET','CLINDA','DANOFL','ENROFL','FLORFE','GENTAM','NEOMYC','OXYTET','PENICI','SDIMET','SPECT','TIAMUL','TILMIC','TRISUL','TULATH','TYLO'],
-    'AVIAN1F': ['AMOXIC','CEFTIF','CLINDA','ENROFL','ERYTH','FLORFE','GENTAM','NEOMYC','NOVOBI','OXYTET','PENICI','SDIMET','SPECT','STREPT','SULTHI','TETRA','TRISUL','TYLO'],
-    'EQUIN1F':  ['AMIKAC','AMPICI','AZITHR','CEFAZO','CEFTAZ','CEFTIF','CHLORA','CLARYT','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','OXACIL','PENICI','RIFAMP','TETRA','TICARC','TICCLA','TRISUL'],
+    'BOPO7F': ['AMPICI','CEFTIF','CLINDA','DANOFL','ENROFL','FLORFE','GAMITH','GENTAM','NEOMYC','PENICI','SDIMET','SPECT','TETRA','TIAMUL','TILDIP','TILMIC','TRISUL','TULATH','TYLO'],
+    'AVIAN1F':  ['AMOXIC','CEFTIF','CLINDA','ENROFL','ERYTH','FLORFE','GENTAM','NEOMYC','NOVOBI','OXYTET','PENICI','SDIMET','SPECT','STREPT','SULTHI','TETRA','TRISUL','TYLO'],
+    'EQUIN1F': ['AMIKAC','AMPICI','AZITHR','CEFAZO','CEFTAZ','CEFTIF','CHLORA','CLARYT','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','OXACIL','PENICI','RIFAMP','TETRA','TICARC','TICCLA','TRISUL'],
+    'EQUIN2F': ['AMIKAC','AMPICI','CEFAZO','CEFTAZ','CEFTIF','CHLORA','CLARYT','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','MINOCY','OXACIL','PENICI','RIFAMP','TETRA','TRISUL'],
     'COMPGN1F': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEFTAZ','CEPALE','CHLORA','DOXYCY','ENROFL','GENTAM','IMIPEN','MARBOF','ORBIFL','PIPTAZ','PRADOF','TETRA','TRISUL'],
     'COMPGP1F': ['AMIKAC','AMOCLA','AMPICI','CEFAZO','CEFOVE','CEFPOD','CEPHAL','CHLORA','CLINDA','DOXYCY','ENROFL','ERYTH','GENTAM','IMIPEN','MARBOF','MINOCY','NITRO','OXACIL','PENICI','PRADOF','RIFAMP','TETRA','TRISUL','VANCOM'],
     'CMV1BURF': ['AMOCLA','AMPICI','CEFTIF','CEPALE','ENROFL','TETRA','TRISUL'],
@@ -134,7 +136,7 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
     })
 );
 
-const atb_offset = 57; // num_input_file_fields;
+const atb_offset = 59; // num_input_file_fields;
 
 Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {
     // console.log(`Before expandPlateTypeRows, plate type ${plateType} had ${allOutputDataRowsByPlateType[plateType].length} rows`)
@@ -225,7 +227,8 @@ Object.keys(allOutputDataRowsByPlateType).forEach((k) => {
         nr.push(r[strainIdIndex]);
         // nr.push(r[genusIndex].trim() + ' ' + r[speciesIndex].trim() + ' ' + (r[seroverIndex].trim() ? r[seroverIndex].trim() : ''));
         nr.push(r.pop());
-        nr = nr.concat(r.slice(num_input_file_fields + 4));
+        nr = nr.concat(r.slice(num_input_file_fields + 4)).map(v => v === '\r' ? '' : v);
+
         return nr;
       });
 
