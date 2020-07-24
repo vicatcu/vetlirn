@@ -10,6 +10,8 @@ const moment = require('moment');
 
 const combined_output_headers = (argv.combined_output_headers || 'Include	Reaccession Number	Name	Sample_number	Strain ID	Genus	species	subspecies	serover	OWNER	Collected by	collection_year	collection_month	collection_day	collection_source	Country	State	Other_Location_Information		NCBI_Sample_Type	Specific_Host	Host_Disease	PN_source_Type		Culture collection Inst.	culture collection ID	NCBI Type strain	WGS PulseNet ID	FACTS_ID	NARMS ID	CDC ID	Isolate_Name_Alias	PrivateStrainSynomyms		Pathotype	Phagetype	Toxin	PFGE_PrimaryEnzyme_pattern	PFGE_SecondaryEnzyme_pattern	VirulenceMarker		NCBI BioProject ID	Project	PulseNet_Outbreak_Code	Isolate_contributor	Public Comments	Private Comments	Metadata Issues		VetLIRN_SourceLab	Method used for organism identification	Isolation_Plate	Isolation_Plate_Other	Case_type	VetLIRN_Salmonella_serotype	VetLIRN_CollectionSource	VetLIRN_CollectionSourceComment').split("\t");
 
+const lastRelevantHeaderIndex = combined_output_headers.indexOf('VetLIRN_CollectionSourceComment');
+
 const plateIndex = combined_output_headers.indexOf('Isolation_Plate');
 const strainIdIndex = combined_output_headers.indexOf('Strain ID');
 const genusIndex = combined_output_headers.indexOf('Genus');
@@ -136,7 +138,7 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
     })
 );
 
-const atb_offset = 59; // num_input_file_fields;
+const atb_offset = lastRelevantHeaderIndex + 1; // 57; // num_input_file_fields;
 
 Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {
     // console.log(`Before expandPlateTypeRows, plate type ${plateType} had ${allOutputDataRowsByPlateType[plateType].length} rows`)
