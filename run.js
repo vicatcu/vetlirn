@@ -8,7 +8,7 @@ const argv = require('minimist')(process.argv.slice(2));
 const zeroFill = require('zero-fill');
 const moment = require('moment');
 
-const combined_output_headers = (argv.combined_output_headers || 'Include	Reaccession Number	Name	Sample_number	Strain ID	Genus	species	subspecies	serover	OWNER	Collected by	collection_year	collection_month	collection_day	collection_source	Country	State	Other_Location_Information		NCBI_Sample_Type	Specific_Host	Host_Disease	PN_source_Type		Culture collection Inst.	culture collection ID	NCBI Type strain	WGS PulseNet ID	FACTS_ID	NARMS ID	CDC ID	Isolate_Name_Alias	PrivateStrainSynomyms		Pathotype	Phagetype	Toxin	PFGE_PrimaryEnzyme_pattern	PFGE_SecondaryEnzyme_pattern	VirulenceMarker		NCBI BioProject ID	Project	PulseNet_Outbreak_Code	Isolate_contributor	Public Comments	Private Comments	Metadata Issues		VetLIRN_SourceLab	Method used for organism identification	Isolation_Plate	Isolation_Plate_Other	Case_type	VetLIRN_Salmonella_serotype	VetLIRN_CollectionSource	VetLIRN_CollectionSourceComment').split("\t");
+const combined_output_headers = (argv.combined_output_headers || 'Include	Reaccession Number	Name	Sample_number	Strain ID	Genus	species	subspecies	serover	OWNER	Collected by	collection_year	collection_month	collection_day	collection_source	Country	State	Other_Location_Information		NCBI_Sample_Type	Specific_Host	Host_Disease	PN_source_Type		Culture collection Inst.	culture collection ID	NCBI Type strain	WGS PulseNet ID	FACTS_ID	NARMS ID	CDC ID	Isolate_Name_Alias	PrivateStrainSynomyms		Pathotype	Phagetype	Toxin	PFGE_PrimaryEnzyme_pattern	PFGE_SecondaryEnzyme_pattern	VirulenceMarker		NCBI BioProject ID	Project	PulseNet_Outbreak_Code	Isolate_contributor	Public Comments	Private Comments	Metadata Issues		VetLIRN_SourceLab	Method used for organism identification	Isolation_Plate	Isolation_Plate_Other	Case_type	VetLIRN_Salmonella_serotype	VetLIRN_CollectionSource	VetLIRN_CollectionSourceComment	Specific_Host').split("\t");
 
 const lastRelevantHeaderIndex = combined_output_headers.indexOf('VetLIRN_CollectionSourceComment');
 
@@ -20,7 +20,7 @@ const seroverIndex = combined_output_headers.indexOf('serover');
 
 const include_header_name = argv.include_header || 'Include';
 const input_data_folder = argv.folder || 'C:\\Users\\msp13\\Desktop\\VETLIRNMasterList';
-const combined_isolates_filename = argv.combined || `Vet-LIRN_metadata_GT-v3.4-V-v14.csv`;
+const combined_isolates_filename = argv.combined || `Vet-LIRN_metadata_GT-v3.4-V-v16.csv`;
 const sensititre_filename = argv.sensititre || `SWINExportFile.TXT`;
 const output_filename = argv.output_filename || argv.o || 'output.csv';
 
@@ -138,7 +138,11 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
     })
 );
 
-const atb_offset = lastRelevantHeaderIndex + 3; // 57; // num_input_file_fields;
+const atb_offset = argv.atb_offset || 60; // lastRelevantHeaderIndex + 3; // 57; // num_input_file_fields;
+
+for (let i = 0; i < allOutputDataRows[0].length; i++) {
+    console.log(`${i}: ${allOutputDataRows[0][i]}`);
+}
 
 Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {
     // console.log(`Before expandPlateTypeRows, plate type ${plateType} had ${allOutputDataRowsByPlateType[plateType].length} rows`)
@@ -149,11 +153,15 @@ Object.keys(allOutputDataRowsByPlateType).forEach((plateType) => {
 });
 
 function expandPlateTypeRows(plateType, rows, plate_drug_map){
+    if (!plate_drug_map) {
+        console.error(`No plate_drug_map exists for plate type "${plateType}"`);
+    }
     const num_target_drugs = plate_drug_map.length;
     if(num_target_drugs === 0){
         console.log(`Warning: Plate Type '${plateType}' has no drug map`);
         return;
     }
+
     const newRows = rows.map((row, idx) => {
         const targetDrugContent = Array(num_target_drugs * 3).fill('');
         for(let i = atb_offset; row[i] && row[i+1] && row[i+2] && row[i].trim() && row[i+1].trim() && row[i+2].trim(); i += 3){
@@ -253,7 +261,7 @@ combined_isolates_data = combined_isolates_data.map(r => {
     return r;
 });
 
-let target_fields = 'Name,Sample_number,Strain ID,Genus,species,subspecies,serover,,Collected by,collection_year,collection_month,collection_source,Country,State,,NCBI_Sample_Type,Specific_Host,Host_Disease,,VetLIRN_SourceLab,Method used for organism identification,Isolation_Plate,Isolation_Plate_Other,Case_type,VetLIRN_Salmonella_serotype,VetLIRN_CollectionSource,VetLIRN_CollectionSourceComment';
+let target_fields = 'Name,Sample_number,Strain ID,Genus,species,subspecies,serover,,Collected by,collection_year,collection_month,collection_source,Country,State,,NCBI_Sample_Type,Specific_Host,Host_Disease,,VetLIRN_SourceLab,Method used for organism identification,Isolation_Plate,Isolation_Plate_Other,Case_type,VetLIRN_Salmonella_serotype,VetLIRN_CollectionSource,VetLIRN_CollectionSourceComment,Specific_Host';
 target_fields = target_fields.split(',');
 const outputFileRows = allOutputDataRows.map(r => {
   let nr = [];
