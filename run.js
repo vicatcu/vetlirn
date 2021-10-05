@@ -19,8 +19,8 @@ const speciesIndex = combined_output_headers.indexOf('species');
 const seroverIndex = combined_output_headers.indexOf('serover');
 
 const include_header_name = argv.include_header || 'Include';
-const input_data_folder = argv.folder || 'C:\\Users\\msp13\\Desktop\\VETLIRNMasterList';
-const combined_isolates_filename = argv.combined || `Vet-LIRN_metadata_GT-v3.4-V-v16.csv`;
+const input_data_folder = argv.folder || 'C:\\Users\\msp13\\OneDrive - Cornell University\\Desktop\\VETLIRNMasterList';
+const combined_isolates_filename = argv.combined || `Vet_LIRN_metadata_GT_v3_4_V_v18.csv`;
 const sensititre_filename = argv.sensititre || `SWINExportFile.TXT`;
 const output_filename = argv.output_filename || argv.o || 'output.csv';
 
@@ -104,7 +104,7 @@ let allOutputDataRows = combined_isolates_data.map((r, idx) => {
 
     let corresponding_sensitire_row = sensititre_data.findIndex(s => s[6] === accession_number); // 6 is 'column G' in the sensititre data
     if(corresponding_sensitire_row < 0){
-        console.error(`Can't find sensititre record for Accesssion #: '${accession_number}'`);
+        console.error(`Can't find sensititre record for Accession #: '${accession_number}'`);
         if(!accession_number) {
             console.error('ROW: ' + row.join(','));
         }
@@ -138,7 +138,7 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
     })
 );
 
-const atb_offset = argv.atb_offset || 60; // lastRelevantHeaderIndex + 3; // 57; // num_input_file_fields;
+const atb_offset = argv.atb_offset || 91; // lastRelevantHeaderIndex + 3; // 57; // num_input_file_fields;
 
 for (let i = 0; i < allOutputDataRows[0].length; i++) {
     console.log(`${i}: ${allOutputDataRows[0][i]}`);
@@ -164,10 +164,11 @@ function expandPlateTypeRows(plateType, rows, plate_drug_map){
 
     const newRows = rows.map((row, idx) => {
         const targetDrugContent = Array(num_target_drugs * 3).fill('');
-        for(let i = atb_offset; row[i] && row[i+1] && row[i+2] && row[i].trim() && row[i+1].trim() && row[i+2].trim(); i += 3){
+        // for(let i = atb_offset; row[i] && row[i+1] && row[i+2] && row[i].trim() && row[i+1].trim() && row[i+2].trim(); i += 3){
+        for(let i = atb_offset; i < row.length; i += 3){
             let a = row[i], b = row[i+1], c = row[i+2];
 
-            if(!a || !a.trim()) continue;
+            if(!a || !a.trim() || !b || !b.trim() || !c || !c.trim()) continue;
             a = a.trim(); b = b.trim(); c = c.trim();
 
             const drugIndex = plate_drug_map.indexOf(a);
