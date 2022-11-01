@@ -50,6 +50,14 @@ const atb_plate_drug_map = {
     'OTHER': ['AMIKAC','BACITR','CEFAZO','CEFTIF','CHLORA','CIPROF','DOXYCY','ERYTH','GENTAM','MOXIFL','NEOMYC','OFLOXA','OXYTET','POLYB','TICARC','TOBRAM','TRISUL']
 };
 
+let allDrugNames = new Set();
+for (const key of Object.keys(atb_plate_drug_map)) {
+    for (const drug of atb_plate_drug_map[key]) {
+        allDrugNames.add(drug);
+    }
+}
+allDrugNames = Array.from(allDrugNames);
+
 const missingATBs = new Map();
 const missingMICs = new Map();
 
@@ -138,7 +146,16 @@ console.dir(Object.keys(allOutputDataRowsByPlateType)
     })
 );
 
-const atb_offset = argv.atb_offset || 91; // lastRelevantHeaderIndex + 3; // 57; // num_input_file_fields;
+let atb_offset = argv.atb_offset || 91; // lastRelevantHeaderIndex + 3; // 57; // num_input_file_fields;
+
+let minNonBlankOffset = Number.MAX_SAFE_INTEGER;
+for (const row of allOutputDataRows) {
+    const idx = row.findIndex((r, i) => (i > lastRelevantHeaderIndex) && allDrugNames.includes(r));
+    if (idx >= 0 && idx < minNonBlankOffset) {
+        minNonBlankOffset = idx;
+    }
+}
+atb_offset = minNonBlankOffset;
 
 for (let i = 0; i < allOutputDataRows[0].length; i++) {
     console.log(`${i}: ${allOutputDataRows[0][i]}`);
